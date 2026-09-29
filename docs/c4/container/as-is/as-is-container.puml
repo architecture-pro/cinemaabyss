@@ -1,0 +1,42 @@
+@startuml
+
+title As is Cinema Abyss Container Diagram
+
+top to bottom direction
+
+!include ../../c4-local/C4-Container.puml
+
+Person(user, "Пользователь", "Пользователь Cinema Abyss")
+
+System_Ext(PaymentSystem, "Платёжная система", "Система обработки платежей")
+System_Ext(OnlineCinemas, "Онлайн-кинотеатры", "Внешние онлайн-кинотеатры")
+System_Ext(S3, "S3", "Объектное хранилище контента")
+
+Container_Boundary(CinemaAbyss, "Cinema Abyss") {
+
+    Container(App, "Клиентские приложения", "Web / Smart TV / Mobile", "Интерфейс онлайн-кинотеатра")
+
+    Container(MainService, "Основной сервис системы", "Go", "Монолитная система")
+
+    ContainerDb(MainDb, "Основная БД", "PostgreSQL", "Хранение и обработка всех данных")
+}
+
+Boundary(RecommenderBoundary, "Рекомендательная система") {
+    ContainerQueue_Ext(RecommendationQueue, "Очередь рекомендаций", "RabbitMQ", "Асинхронный обмен данными между Cinema Abyss и рекомендательной системой")
+}
+
+Rel(user, App, "Использует")
+
+Rel(App, MainService, "Отправляет запросы", "HTTPS / REST API")
+
+Rel(MainService, MainDb, "Читает и записывает данные", "SQL")
+
+Rel(MainService, PaymentSystem, "Проводит платежи", "HTTPS")
+
+Rel(MainService, OnlineCinemas, "Получает данные о контенте", "HTTPS / API")
+
+Rel(MainService, S3, "Хранит и получает контент", "S3 API")
+
+Rel(MainService, RecommendationQueue, "Публикует данные и получает результаты", "API")
+
+@enduml
