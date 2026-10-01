@@ -1,0 +1,12 @@
+{
+	"name": "cinemaabyss-events-service",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"start": "node src/index.js"
+	},
+	"dependencies": {
+		"express": "^5.1.0",
+		"kafkajs": "^2.2.4"
+	}
+}

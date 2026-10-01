@@ -1,0 +1,154 @@
+@startuml
+
+title To-Be Cinema Abyss Container Diagram
+
+top to bottom direction
+
+!include ../../c4-local/C4-Container.puml
+
+Person(user, "Пользователь", "Пользователь Cinema Abyss")
+
+System_Ext(PaymentSystem, "Платёжная система", "Внешняя система обработки платежей")
+System_Ext(OnlineCinemas, "Онлайн-кинотеатры", "Внешние поставщики контента")
+System_Ext(S3, "S3", "Внешнее объектное хранилище контента")
+
+Container_Boundary(CinemaAbyss, "Cinema Abyss") {
+
+    Container(SmartTV, "Smart TV", "JavaScript", "Приложение для Smart TV")
+    Container(WebApp, "Web-приложение", "Next.js", "Web-интерфейс Cinema Abyss")
+    Container(MobileApp, "Mobile-приложение", "Swift / Kotlin", "Приложение для iOS и Android")
+
+    Container(ProxyService, "Proxy Service", "Go", "Принимает, проверяет и маршрутизирует запросы")
+
+    Container(UserService, "Users Service", "Go", "Управляет регистрацией, аутентификацией и пользовательскими данными")
+    ContainerDb(UserDb, "Users DB", "PostgreSQL", "Хранит данные пользователей")
+
+    Container(MoviesService, "Movies Service", "Go", "Управляет метаданными фильмов, рейтингами и жанрами")
+    ContainerDb(MoviesDb, "Movies DB", "PostgreSQL", "Хранит метаданные фильмов, рейтинги и жанры")
+
+    Container(PaymentService, "Payments Service", "Go", "Управляет платежами, статусами операций и возвратами")
+    ContainerDb(PaymentDb, "Payments DB", "PostgreSQL", "Хранит платежи статусы операций и возвраты")
+
+    Container(SubscriptionService, "Subscriptions Service", "Go", "Управляет подписками пользователей и тарифными планами")
+    ContainerDb(SubscriptionDb, "Subscriptions DB", "PostgreSQL", "Хранит подписки и тарифные планы")
+
+    Container(EventsService, "Events Service", "Node.js / Express", "Принимает события через API, публикует их в Kafka и обрабатывает как consumer")
+    ContainerQueue(EventBroker, "Event Broker", "Kafka", "Обеспечивает асинхронное взаимодействие")
+
+    Container(RecommendationService, "Recommendation Integration Service", "Go", "Интегрируется с внешней рекомендательной системой")
+}
+
+Boundary(RecommenderBoundary, "Внешняя рекомендательная система") {
+    ContainerQueue_Ext(RecommendationQueue, "Очередь рекомендаций", "RabbitMQ", "Асинхронный обмен данными между Cinema Abyss и рекомендательной системой")
+}
+
+Rel(user, SmartTV, "")
+Rel(user, WebApp, "Использует")
+Rel(user, MobileApp, "")
+
+Rel(SmartTV, ProxyService, "", "HTTPS / REST")
+Rel(WebApp, ProxyService, "Отправляет запросы", "HTTPS / REST")
+Rel(MobileApp, ProxyService, "", "HTTPS / REST")
+
+Rel(ProxyService, UserService, "", "HTTPS / REST")
+Rel(ProxyService, MoviesService, "", "HTTPS / REST")
+Rel(ProxyService, PaymentService, "Маршрутизирует запросы платежей", "HTTPS / REST")
+Rel(ProxyService, SubscriptionService, "Маршрутизирует запросы подписок", "HTTPS / REST")
+Rel(ProxyService, RecommendationService, "", "HTTPS / REST")
+
+Rel(UserService, UserDb, "Читает и сохраняет данные", "SQL")
+Rel(MoviesService, MoviesDb, "Читает и сохраняет данные", "SQL")
+Rel(PaymentService, PaymentDb, "Читает и сохраняет данные", "SQL")
+Rel(SubscriptionService, SubscriptionDb, "Читает и сохраняет данные", "SQL")
+
+Rel(UserService, EventsService, "Передаёт события пользователей", "HTTPS / REST")
+Rel(MoviesService, EventsService, "Передаёт события фильмов", "HTTPS / REST")
+Rel(PaymentService, EventsService, "Передаёт события платежей", "HTTPS / REST")
+
+Rel(EventsService, EventBroker, "Публикует и получает события", "Kafka")
+
+Rel(PaymentService, PaymentSystem, "Проводит платежи", "HTTPS / API")
+
+Rel(MoviesService, OnlineCinemas, "Получает данные о контенте", "HTTPS / API")
+Rel(MoviesService, S3, "Хранит и получает контент", "S3 API")
+
+Rel(RecommendationService, RecommendationQueue, "Передаёт данные и получает рекомендации", "API")
+
+@enduml
+
+' @startuml
+
+' title To be Cinema Abyss Container Diagram
+
+' top to bottom direction
+
+' !include ../../c4-local/C4-Container.puml
+
+' Person(user, "Пользователь", "Пользователь Cinema Abyss")
+
+' System_Ext(PaymentSystem, "Платёжная система", "Внешняя система обработки платежей")
+' System_Ext(OnlineCinemas, "Онлайн-кинотеатры", "Внешние поставщики контента")
+' System_Ext(S3, "S3", "Внешнее объектное хранилище контента")
+
+' Container_Boundary(CinemaAbyss, "Cinema Abyss") {
+
+'     Container(SmartTV, "Smart TV", "JavaScript", "Приложение для Smart TV")
+'     Container(WebApp, "Web-приложение", "Next.js", "Web-интерфейс Cinema Abyss")
+'     Container(MobileApp, "Mobile-приложение", "Swift / Kotlin", "Приложение для iOS и Android")
+
+'     Container(ApiGateway, "API Gateway", "Kong", "Принимает, проверяет и маршрутизирует запросы к BFF слою")
+
+'     Boundary(BFFServices, "BFF Layer") {
+'         Container(BffLayerSmartTV, "Backend for SmartTV", "Go", "Предоставляет API для Smart TV и агрегирует данные backend-сервисов")
+'         Container(BffLayerWebApp, "Backend for WebApp", "Go", "Предоставляет API для Web-приложения и агрегирует данные backend-сервисов")
+'         Container(BffLayerMobileApp, "Backend for MobileApp", "Go", "Предоставляет API для мобильного приложения и агрегирует данные backend-сервисов")
+'     }
+
+'     Container(UserService, "Сервис пользователей", "Go", "Аутентификация, авторизация, проверка токенов и управление данными пользователей")
+'     Container(CinemaService, "Сервис онлайн-кинотеатра", "Go", "Управляет каталогом, фильмами и данными онлайн-кинотеатра")
+'     Container(PaymentService, "Сервис платежей", "Go", "Создаёт платежи, обрабатывает статусы операций и возвраты")
+'     Container(ObjectStorageService, "Сервис объектного хранилища", "Go", "Управляет взаимодействием с объектным хранилищем")
+'     Container(RecommendationService, "Сервис рекомендаций", "Go", "Интегрируется с внешней рекомендательной системой и предоставляет рекомендации другим компонентам Cinema Abyss")
+
+'     ContainerDb(UserDb, "БД пользователей", "PostgreSQL", "Хранит учётные данные и информацию о пользователях")
+'     ContainerDb(CinemaDb, "БД онлайн-кинотеатра", "PostgreSQL", "Хранит каталог, метаданные фильмов и данные онлайн-кинотеатра")
+'     ContainerDb(PaymentDb, "БД платежей", "PostgreSQL", "Хранит платежи, статусы операций и данные возвратов")
+'     ContainerDb(ObjectStorageDb, "БД объектного хранилища", "PostgreSQL", "Хранит метаданные объектов внешнего хранилища")
+' }
+
+' Boundary(RecommenderBoundary, "Внешняя рекомендательная система") {
+'     ContainerQueue_Ext(RecommendationQueue, "Очередь рекомендаций", "RabbitMQ", "Асинхронный обмен данными между Cinema Abyss и рекомендательной системой")
+' }
+
+' Rel(user, SmartTV, "Использует")
+' Rel(user, WebApp, "Использует")
+' Rel(user, MobileApp, "Использует")
+
+' Rel(SmartTV, ApiGateway, "Отправляет запросы", "HTTPS")
+' Rel(WebApp, ApiGateway, "Отправляет запросы", "HTTPS")
+' Rel(MobileApp, ApiGateway, "Отправляет запросы", "HTTPS")
+
+' Rel(ApiGateway, UserService, "Проверяет токен и права доступа", "HTTPS / REST")
+
+' Rel(ApiGateway, BffLayerSmartTV, "Маршрутизирует запросы Smart TV", "HTTPS / REST")
+' Rel(ApiGateway, BffLayerWebApp, "Маршрутизирует Web-запросы", "HTTPS / REST")
+' Rel(ApiGateway, BffLayerMobileApp, "Маршрутизирует Mobile-запросы", "HTTPS / REST")
+
+' Rel(BFFServices, UserService, "Получает и изменяет данные пользователей", "HTTPS / REST")
+' Rel(BFFServices, CinemaService, "Получает каталог и данные контента", "HTTPS / REST")
+' Rel(BFFServices, PaymentService, "Выполняет операции с платежами", "HTTPS / REST")
+' Rel(BFFServices, ObjectStorageService, "Получает данные объектов", "HTTPS / REST")
+' Rel(BFFServices, RecommendationService, "Получает рекомендации", "HTTPS / REST")
+
+' Rel(UserService, UserDb, "Читает и сохраняет данные", "SQL")
+' Rel(CinemaService, CinemaDb, "Читает и сохраняет данные", "SQL")
+' Rel(PaymentService, PaymentDb, "Читает и сохраняет данные", "SQL")
+' Rel(ObjectStorageService, ObjectStorageDb, "Читает и сохраняет метаданные", "SQL")
+
+' Rel(PaymentService, PaymentSystem, "Проводит платежи", "HTTPS / API")
+' Rel(CinemaService, OnlineCinemas, "Получает данные о контенте", "HTTPS / API")
+' Rel(ObjectStorageService, S3, "Хранит и получает объекты", "S3 API")
+
+' Rel(RecommendationService, RecommendationQueue, "Передаёт данные и получает рекомендации", "API")
+
+' @enduml
